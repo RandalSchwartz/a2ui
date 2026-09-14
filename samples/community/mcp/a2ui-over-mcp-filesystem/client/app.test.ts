@@ -123,6 +123,7 @@ describe('the filesystem payload', () => {
     expect(app.surface!.dataModel.get('/entries')).toEqual([
       {
         name: 'Documents',
+        path: 'Documents',
         size: '',
         icon: 'folder',
         tool: 'list_directory_with_sizes',
@@ -131,6 +132,7 @@ describe('the filesystem payload', () => {
       },
       {
         name: '.bash_profile',
+        path: '.bash_profile',
         size: '568 B',
         icon: 'attachFile',
         tool: 'read_text_file',
@@ -139,6 +141,7 @@ describe('the filesystem payload', () => {
       },
       {
         name: 'notes with spaces.md',
+        path: 'notes with spaces.md',
         size: '2.39 KB',
         icon: 'attachFile',
         tool: 'read_text_file',
@@ -207,16 +210,42 @@ describe('the filesystem payload', () => {
     expect(app.surface!.dataModel.get('/search_results')).toEqual([
       {
         label: '/Users/ada/a.md',
+        path: '/Users/ada/a.md',
         args: {path: '/Users/ada/a.md'},
         jsonata: {path: '/jsonata/read'},
       },
       {
         label: '/Users/ada/notes/b.md',
+        path: '/Users/ada/notes/b.md',
         args: {path: '/Users/ada/notes/b.md'},
         jsonata: {path: '/jsonata/read'},
       },
     ]);
-    expect(app.surface!.dataModel.get('/viewer_body')).toBe('Matches: 2');
+    expect(app.surface!.dataModel.get('/viewer_body')).toBe(
+      'Found 2 matches for glob `**/*.md` in `~`',
+    );
+  });
+
+  it('supports typing a directory path and listing it', async () => {
+    await bootstrap(app);
+
+    // User types in the Directory text field
+    app.surface!.dataModel.set('/args/open/path', 'Documents/projects');
+
+    // Click "List directory" button
+    await click(app, {
+      name: 'list_directory_with_sizes',
+      arguments: {path: {path: '/args/open/path'}},
+      dataModelUpdateJsonata: {path: '/jsonata/list'},
+    });
+
+    expect(mockClient.request.mock.lastCall![0].params).toEqual({
+      name: 'list_directory_with_sizes',
+      arguments: {path: 'Documents/projects'},
+    });
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('Documents/projects');
+    expect(app.surface!.dataModel.get('/args/parent/path')).toBe('Documents');
+    expect(app.surface!.dataModel.get('/args/search/path')).toBe('Documents/projects');
   });
 
   it('empties the result list when nothing matches', async () => {
@@ -257,7 +286,10 @@ function entryCall(app: A2uiFilesystemApp, index: number): Record<string, unknow
 function searchCall(app: A2uiFilesystemApp): Record<string, unknown> {
   return {
     name: 'search_files',
-    arguments: app.surface!.dataModel.get('/args/search'),
+    arguments: {
+      path: app.surface!.dataModel.get('/args/search/path'),
+      pattern: app.surface!.dataModel.get('/args/search/pattern'),
+    },
     dataModelUpdateJsonata: app.surface!.dataModel.get('/jsonata/search'),
   };
 }

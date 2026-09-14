@@ -37,16 +37,27 @@
           "id": "left_pane",
           "component": "Column",
           "weight": 1,
-          "children": ["nav_card", "entries_card", "search_card"]
+          "children": ["top_card", "entries_card"]
         },
         {
-          "id": "nav_card",
+          "id": "top_card",
           "component": "Card",
-          "child": "nav_column"
+          "child": "top_controls"
+        },
+        {
+          "id": "top_controls",
+          "component": "Column",
+          "children": ["controls_row", "search_results_list"]
+        },
+        {
+          "id": "controls_row",
+          "component": "Row",
+          "children": ["nav_column", "search_column"]
         },
         {
           "id": "nav_column",
           "component": "Column",
+          "weight": 1,
           "children": ["path_field", "nav_row"]
         },
         {
@@ -73,7 +84,9 @@
               "args": {
                 "name": "list_directory_with_sizes",
                 "arguments": {
-                  "path": "/args/open"
+                  "path": {
+                    "path": "/args/open/path"
+                  }
                 },
                 "dataModelUpdateJsonata": {
                   "path": "/jsonata/list"
@@ -97,7 +110,9 @@
               "args": {
                 "name": "list_directory_with_sizes",
                 "arguments": {
-                  "path": "/args/parent"
+                  "path": {
+                    "path": "/args/parent/path"
+                  }
                 },
                 "dataModelUpdateJsonata": {
                   "path": "/jsonata/list"
@@ -121,7 +136,7 @@
               "args": {
                 "name": "list_directory_with_sizes",
                 "arguments": {
-                  "path": "/args/home"
+                  "path": "~"
                 },
                 "dataModelUpdateJsonata": {
                   "path": "/jsonata/list"
@@ -134,6 +149,87 @@
           "id": "home_button_text",
           "component": "Text",
           "text": "Home"
+        },
+        {
+          "id": "search_column",
+          "component": "Column",
+          "weight": 1,
+          "children": ["search_field", "search_button"]
+        },
+        {
+          "id": "search_field",
+          "component": "TextField",
+          "label": "Search files (glob)",
+          "value": {
+            "path": "/args/search/pattern"
+          }
+        },
+        {
+          "id": "search_button",
+          "component": "Button",
+          "child": "search_button_text",
+          "action": {
+            "functionCall": {
+              "call": "callMcpTool",
+              "args": {
+                "name": "search_files",
+                "arguments": {
+                  "path": {
+                    "path": "/args/search/path"
+                  },
+                  "pattern": {
+                    "path": "/args/search/pattern"
+                  }
+                },
+                "dataModelUpdateJsonata": {
+                  "path": "/jsonata/search"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "search_button_text",
+          "component": "Text",
+          "text": "Run search_files"
+        },
+        {
+          "id": "search_results_list",
+          "component": "List",
+          "children": {
+            "componentId": "search_row",
+            "path": "/search_results"
+          }
+        },
+        {
+          "id": "search_row",
+          "component": "Button",
+          "variant": "borderless",
+          "child": "search_row_text",
+          "action": {
+            "functionCall": {
+              "call": "callMcpTool",
+              "args": {
+                "name": "read_text_file",
+                "arguments": {
+                  "path": {
+                    "path": "path"
+                  }
+                },
+                "dataModelUpdateJsonata": {
+                  "path": "jsonata"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "search_row_text",
+          "component": "Text",
+          "text": {
+            "path": "label"
+          },
+          "variant": "caption"
         },
         {
           "id": "entries_card",
@@ -187,7 +283,9 @@
                   "path": "tool"
                 },
                 "arguments": {
-                  "path": "args"
+                  "path": {
+                    "path": "path"
+                  }
                 },
                 "dataModelUpdateJsonata": {
                   "path": "jsonata"
@@ -208,84 +306,6 @@
           "component": "Text",
           "text": {
             "path": "size"
-          },
-          "variant": "caption"
-        },
-        {
-          "id": "search_card",
-          "component": "Card",
-          "child": "search_column"
-        },
-        {
-          "id": "search_column",
-          "component": "Column",
-          "children": ["search_field", "search_button", "search_list"]
-        },
-        {
-          "id": "search_field",
-          "component": "TextField",
-          "label": "Glob, searched below this directory",
-          "value": {
-            "path": "/args/search/pattern"
-          }
-        },
-        {
-          "id": "search_button",
-          "component": "Button",
-          "child": "search_button_text",
-          "action": {
-            "functionCall": {
-              "call": "callMcpTool",
-              "args": {
-                "name": "search_files",
-                "arguments": {
-                  "path": "/args/search"
-                },
-                "dataModelUpdateJsonata": {
-                  "path": "/jsonata/search"
-                }
-              }
-            }
-          }
-        },
-        {
-          "id": "search_button_text",
-          "component": "Text",
-          "text": "Run search_files"
-        },
-        {
-          "id": "search_list",
-          "component": "List",
-          "children": {
-            "componentId": "search_row",
-            "path": "/search_results"
-          }
-        },
-        {
-          "id": "search_row",
-          "component": "Button",
-          "variant": "borderless",
-          "child": "search_row_text",
-          "action": {
-            "functionCall": {
-              "call": "callMcpTool",
-              "args": {
-                "name": "read_text_file",
-                "arguments": {
-                  "path": "args"
-                },
-                "dataModelUpdateJsonata": {
-                  "path": "jsonata"
-                }
-              }
-            }
-          }
-        },
-        {
-          "id": "search_row_text",
-          "component": "Text",
-          "text": {
-            "path": "label"
           },
           "variant": "caption"
         },
@@ -349,9 +369,9 @@
           }
         },
         "jsonata": {
-          "list": "( $dir := $args.path ? $args.path : '~'; $isRoot := ($dir = '~' or $dir = '' or $dir = '.'); $childPath := function($name) { $isRoot ? $name : ($dir & '/' & $name) }; $parentDir := ($isRoot or $not($contains($dir, '/'))) ? '~' : $replace($dir, /\\/[^/]+$/, ''); $rows := [ $split($join(content[type = 'text'].text, '\\n'), '\\n')[$contains($, /^\\[(DIR|FILE)\\]/)].( $g := $match($, /^\\[(DIR|FILE)\\]\\s+(.+?)(?:\\s\\s+([0-9.]+ [A-Za-z]+))?\\s*$/).groups; $isDir := $g[0] = 'DIR'; { 'name': $g[1], 'size': $g[2] ? $g[2] : '', 'icon': $isDir ? 'folder' : 'attachFile', 'tool': $isDir ? 'list_directory_with_sizes' : 'read_text_file', 'args': { 'path': $childPath($g[1]) }, 'jsonata': $isDir ? { 'path': '/jsonata/list' } : { 'path': '/jsonata/read' } } ) ]; { '/entries': $rows, '/entries_title': $string($count($rows)) & ($count($rows) = 1 ? ' entry' : ' entries'), '/args/open/path': $dir, '/args/parent/path': $parentDir, '/args/search/path': $dir, '/viewer_title': $isRoot ? 'Home Directory (~)' : $dir } )",
+          "list": "( $dir := $args.path ? $args.path : '~'; $isRoot := ($dir = '~' or $dir = '' or $dir = '.'); $childPath := function($name) { $isRoot ? $name : ($dir & '/' & $name) }; $parentDir := ($isRoot or $not($contains($dir, '/'))) ? '~' : $replace($dir, /\\/[^/]+$/, ''); $rows := [ $split($join(content[type = 'text'].text, '\\n'), '\\n')[$contains($, /^\\[(DIR|FILE)\\]/)].( $g := $match($, /^\\[(DIR|FILE)\\]\\s+(.+?)(?:\\s\\s+([0-9.]+ [A-Za-z]+))?\\s*$/).groups; $isDir := $g[0] = 'DIR'; $p := $childPath($g[1]); { 'name': $g[1], 'path': $p, 'size': $g[2] ? $g[2] : '', 'icon': $isDir ? 'folder' : 'attachFile', 'tool': $isDir ? 'list_directory_with_sizes' : 'read_text_file', 'args': { 'path': $p }, 'jsonata': $isDir ? { 'path': '/jsonata/list' } : { 'path': '/jsonata/read' } } ) ]; { '/entries': $rows, '/entries_title': $string($count($rows)) & ($count($rows) = 1 ? ' entry' : ' entries'), '/args/open/path': $dir, '/args/parent/path': $parentDir, '/args/search/path': $dir, '/viewer_title': $isRoot ? 'Home Directory (~)' : $dir } )",
           "read": "{ '/viewer_body': '```\\n' & $join($split($join(content[type = 'text'].text, '\\n'), '\\n')[[0..200]], '\\n') & '\\n```', '/viewer_title': $args.path ? $args.path : 'File Content' }",
-          "search": "( $hits := [ $split($join(content[type = 'text'].text, '\\n'), '\\n')[$ != '' and $not($contains($, 'No matches'))].{ 'label': $, 'args': { 'path': $ }, 'jsonata': { 'path': '/jsonata/read' } } ]; { '/search_results': $hits, '/viewer_body': 'Matches: ' & $string($count($hits)), '/viewer_title': 'Search Results' } )"
+          "search": "( $hits := [ $split($join(content[type = 'text'].text, '\\n'), '\\n')[$ != '' and $not($contains($, 'No matches'))].{ 'label': $, 'path': $, 'args': { 'path': $ }, 'jsonata': { 'path': '/jsonata/read' } } ]; { '/search_results': $hits, '/viewer_body': 'Found ' & $string($count($hits)) & ($count($hits) = 1 ? ' match' : ' matches') & ' for glob `' & ($args.pattern ? $args.pattern : '**/*.md') & '` in `' & ($args.path ? $args.path : '~') & '`', '/viewer_title': 'Search Results' } )"
         },
         "startup": [
           {
