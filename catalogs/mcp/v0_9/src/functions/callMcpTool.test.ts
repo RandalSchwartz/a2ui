@@ -757,6 +757,26 @@ describe('callMcpTool', () => {
       assert.strictEqual(surface.dataModel.get('/body'), 'hello');
     });
 
+    it('provides $args and $tool bindings to the JSONata expression', async () => {
+      const client = createFakeClient({result: {content: [{type: 'text', text: 'data'}]}});
+      const surface = createSurface(client);
+
+      await surface.catalog.invoker(
+        'callMcpTool',
+        {
+          name: 'read_text_file',
+          arguments: {path: 'foo/bar.txt'},
+          dataModelUpdateJsonata:
+            '{"/filePath": $args.path, "/calledTool": $tool, "/body": content[0].text}',
+        },
+        new DataContext(surface, '/'),
+      );
+
+      assert.strictEqual(surface.dataModel.get('/filePath'), 'foo/bar.txt');
+      assert.strictEqual(surface.dataModel.get('/calledTool'), 'read_text_file');
+      assert.strictEqual(surface.dataModel.get('/body'), 'data');
+    });
+
     it('rejects an expression that does not produce an object', async () => {
       const client = createFakeClient();
       const surface = createSurface(client);

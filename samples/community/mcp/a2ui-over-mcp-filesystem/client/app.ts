@@ -114,17 +114,84 @@ export class A2uiFilesystemApp extends LitElement {
   static styles = css`
     :host {
       display: block;
-      padding: 24px;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      box-sizing: border-box;
+      color: #f1f5f9;
+      color-scheme: dark;
+
+      /* A2UI Design Tokens */
+      --a2ui-color-primary: #3b82f6;
+      --a2ui-color-primary-hover: #2563eb;
+      --a2ui-color-on-primary: #ffffff;
+      --a2ui-color-secondary: #1e293b;
+      --a2ui-color-secondary-hover: #334155;
+      --a2ui-color-on-secondary: #f1f5f9;
+      --a2ui-color-surface: #151e2e;
+      --a2ui-color-on-surface: #f1f5f9;
+      --a2ui-color-border: rgba(255, 255, 255, 0.08);
+      --a2ui-color-input: #0b1120;
+      --a2ui-color-on-input: #f8fafc;
+      --a2ui-color-on-background: #f1f5f9;
+
+      --a2ui-border-radius: 12px;
+      --a2ui-border-width: 1px;
+      --a2ui-spacing-xs: 4px;
+      --a2ui-spacing-s: 8px;
+      --a2ui-spacing-m: 12px;
+      --a2ui-spacing-l: 16px;
+      --a2ui-spacing-xl: 24px;
+
+      --a2ui-card-background: #151e2e;
+      --a2ui-card-border: 1px solid rgba(255, 255, 255, 0.08);
+      --a2ui-card-border-radius: 14px;
+      --a2ui-card-padding: 20px;
+      --a2ui-card-box-shadow:
+        0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      --a2ui-card-margin: 0;
+
+      --a2ui-button-border-radius: 8px;
+      --a2ui-button-padding: 8px 16px;
+      --a2ui-button-margin: 0;
+      --a2ui-button-font-weight: 500;
+      --a2ui-button-border: 1px solid rgba(255, 255, 255, 0.12);
+      --a2ui-button-background: #1e293b;
+
+      --a2ui-textfield-border: 1px solid rgba(255, 255, 255, 0.12);
+      --a2ui-textfield-border-radius: 8px;
+      --a2ui-textfield-padding: 9px 13px;
+      --a2ui-textfield-color-border-focus: #3b82f6;
+      --a2ui-label-font-size: 13px;
+      --a2ui-label-font-weight: 600;
+
+      --a2ui-list-padding: 0;
+      --a2ui-list-gap: 2px;
+      --a2ui-text-caption-color: #94a3b8;
+      --a2ui-icon-size: 18px;
+      --a2ui-icon-color: #60a5fa;
+
+      --a2ui-row-gap: 12px;
+      --a2ui-column-gap: 16px;
     }
 
     .error {
-      margin-bottom: 16px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: #fff1f0;
-      border: 1px solid #f3aba4;
-      color: #8b1a10;
+      margin-bottom: 20px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
       font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    a2ui-surface {
+      display: block;
+      width: 100%;
     }
   `;
 

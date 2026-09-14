@@ -172,7 +172,7 @@ describe('the filesystem payload', () => {
     );
   });
 
-  it('keeps the listing branch for a row that is a directory', async () => {
+  it('keeps the listing branch for a row that is a directory and supports nested navigation', async () => {
     await bootstrap(app);
 
     await click(app, entryCall(app, 0), '/entries/0');
@@ -181,6 +181,18 @@ describe('the filesystem payload', () => {
       name: 'list_directory_with_sizes',
       arguments: {path: 'Documents'},
     });
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('Documents');
+    expect(app.surface!.dataModel.get('/args/parent/path')).toBe('~');
+
+    // Navigate a second level down
+    await click(app, entryCall(app, 0), '/entries/0');
+
+    expect(mockClient.request.mock.lastCall![0].params).toEqual({
+      name: 'list_directory_with_sizes',
+      arguments: {path: 'Documents/Documents'},
+    });
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('Documents/Documents');
+    expect(app.surface!.dataModel.get('/args/parent/path')).toBe('Documents');
   });
 
   it('turns search output into a result list', async () => {

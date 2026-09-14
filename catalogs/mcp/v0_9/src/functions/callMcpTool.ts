@@ -273,7 +273,13 @@ export function createCallMcpToolImplementation(
 
       // Updates the payload derived from the result itself, applied last so a
       // payload can restate anything the server sent inline.
-      const updates = await buildJsonataUpdates(updateJsonata, result, context);
+      const updates = await buildJsonataUpdates(
+        updateJsonata,
+        result,
+        context,
+        resolvedArguments,
+        toolName,
+      );
       if (updates.length > 0) {
         processor.processMessages(updates);
       }
@@ -318,6 +324,8 @@ async function buildJsonataUpdates(
   expression: string | undefined,
   result: CallToolResult,
   context: DataContext,
+  resolvedArguments?: Record<string, unknown>,
+  toolName?: string,
 ): Promise<A2uiMessage[]> {
   if (!expression) {
     return [];
@@ -336,7 +344,10 @@ async function buildJsonataUpdates(
 
   let evaluated: unknown;
   try {
-    evaluated = await compiled.evaluate(result);
+    evaluated = await compiled.evaluate(result, {
+      args: resolvedArguments ?? {},
+      tool: toolName,
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`JSONata evaluation failed: ${message}`);
