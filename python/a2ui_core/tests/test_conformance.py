@@ -24,7 +24,7 @@ from a2ui.core.catalog import Catalog
 from a2ui.core.basic_catalog import v0_8, v0_9, v1_0
 from a2ui.core.schema import ProtocolVersion
 from a2ui.core.processing import MessageProcessor, MessageProcessorOptions
-from a2ui.core.validation import STRICT_VALIDATION
+from a2ui.core.validation import STRICT_VALIDATION, ValidationConfig
 from a2ui.core.exceptions import (
     A2uiError,
     A2uiParseError,
@@ -1085,7 +1085,10 @@ def validate_handle_rpc_case(case: dict[str, Any]) -> None:
         components=[],
         functions=funcs,
     )
-    processor = MessageProcessor(catalogs=[cat])
+    processor = MessageProcessor(
+        catalogs=[cat],
+        options=MessageProcessorOptions(outbound_listener=lambda msg: None),
+    )
 
     if message:
         expect_dict = case.get("expect", {})
@@ -1100,10 +1103,14 @@ def validate_handle_rpc_case(case: dict[str, Any]) -> None:
         elif "response" in expect_dict:
             from a2ui.core.processing import ExecutionContext
 
+            import asyncio
+
             expect_resp = expect_dict["response"]
-            responses = processor.process_messages(
-                message,
-                context=ExecutionContext(is_user_activated=user_activation),
+            responses = asyncio.run(
+                processor.process_messages_async(
+                    message,
+                    context=ExecutionContext(is_user_activated=user_activation),
+                )
             )
             if expect_resp is None:
                 assert len(responses) == 0
@@ -1133,61 +1140,72 @@ def validate_handle_rpc_case(case: dict[str, Any]) -> None:
             inbound_response["agentFunctionResponse"]["functionCallId"] == correlated_id
         )
 
-        outbound_msg = processor.create_call_agent_function_message(
+        from a2ui.core.rpc import CallOptions
+        from a2ui.core.schema.v1_0.common_types import FunctionCall
+
+        fut = processor.call_agent_function(
             surface_id=outbound_call["surfaceId"],
-            function_call_id=outbound_call["functionCallId"],
-            call=outbound_call["callFunction"]["call"],
-            version="v1.0",
-            catalog_id=outbound_call["callFunction"].get("catalogId")
-            or "https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json",
-            args=outbound_call["callFunction"].get("args"),
+            call=FunctionCall(
+                call=outbound_call["callFunction"]["call"],
+                catalogId=outbound_call["callFunction"].get("catalogId")
+                or "https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json",
+                args=outbound_call["callFunction"].get("args"),
+            ),
+            options=CallOptions(
+                function_call_id=outbound_call["functionCallId"],
+                version="v1.0",
+            ),
         )
-        assert outbound_msg["callAgentFunction"]["functionCallId"] == correlated_id
-
-        import asyncio
-
-        loop = asyncio.new_event_loop()
-        try:
-            fut = loop.create_future()
-            processor.register_pending_future(outbound_call["functionCallId"], fut)
-            processor.process_messages(inbound_response)
-            assert fut.done()
-            assert fut.result() == case.get("expect", {}).get("result")
-        finally:
-            loop.close()
+        processor.process_messages(inbound_response)
+        assert fut.done()
+        assert fut.result() == case.get("expect", {}).get("result")
     elif outbound_call and (
         case.get("expectError") or case.get("expect", {}).get("error")
     ):
-        expected_err = case.get("expectError") or case.get("expect", {}).get("error")
-        if "secondOutboundCall" in args:
-            processor.register_pending_agent_call(
-                outbound_call["functionCallId"],
-                lambda *a: None,
-            )
-            second = args["secondOutboundCall"]
-            with assert_raises(expected_err):
-                processor.register_pending_agent_call(
-                    second["functionCallId"],
-                    lambda *a: None,
-                )
-        elif "timeoutMs" in outbound_call:
-            import asyncio
-            from a2ui.core.exceptions import A2uiRpcError, RpcErrorCode
+        import asyncio
 
-            loop = asyncio.new_event_loop()
-            try:
-                fut = loop.create_future()
-                processor.register_pending_future(outbound_call["functionCallId"], fut)
-                processor.cleanup_pending_agent_call(outbound_call["functionCallId"])
+        from a2ui.core.exceptions import A2uiRpcError
+        from a2ui.core.rpc import CallOptions
+        from a2ui.core.schema.v1_0.common_types import FunctionCall
+
+        expected_err = case.get("expectError") or case.get("expect", {}).get("error")
+
+        def _start_call(spec: dict[str, Any]) -> Any:
+            return processor.call_agent_function(
+                surface_id=spec["surfaceId"],
+                call=FunctionCall(
+                    call=spec["callFunction"]["call"],
+                    catalogId=spec["callFunction"].get("catalogId")
+                    or "https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json",
+                    args=spec["callFunction"].get("args"),
+                ),
+                options=CallOptions(
+                    function_call_id=spec["functionCallId"],
+                    version="v1.0",
+                    timeout_ms=spec.get("timeoutMs"),
+                ),
+            )
+
+        if "secondOutboundCall" in args:
+
+            async def _expect_duplicate() -> None:
+                # The first call stays pending, so reusing its id must be refused.
+                pending = _start_call(outbound_call)
                 with pytest.raises(A2uiRpcError) as exc_info:
-                    raise A2uiRpcError(
-                        f"Call {outbound_call['functionCallId']} timed out.",
-                        function_call_id=outbound_call["functionCallId"],
-                        code=RpcErrorCode.TIMEOUT,
-                    )
-                assert exc_info.value.code == "TIMEOUT"
-            finally:
-                loop.close()
+                    _start_call(args["secondOutboundCall"])
+                assert exc_info.value.code == expected_err.get("code", "DUPLICATE")
+                pending.cancel()
+
+            asyncio.run(_expect_duplicate())
+        elif "timeoutMs" in outbound_call:
+
+            async def _expect_timeout() -> None:
+                # No response arrives, so the handler's timer must reject the future.
+                with pytest.raises(A2uiRpcError) as exc_info:
+                    await _start_call(outbound_call)
+                assert exc_info.value.code == expected_err.get("code", "TIMEOUT")
+
+            asyncio.run(_expect_timeout())
 
 
 def validate_accessibility_check_case(case: dict[str, Any]) -> None:
