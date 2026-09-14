@@ -26,6 +26,10 @@
               "additionalProperties": {
                 "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DynamicValue"
               }
+            },
+            "dataModelUpdateJsonata": {
+              "type": "string",
+              "description": "A JSONata expression evaluated against the MCP tool result that produces an object of data model paths to values, each applied to the calling surface as an updateDataModel message once the call completes. The variables `$args` and `$root` hold the tool arguments and the whole data model."
             }
           },
           "required": ["name"],

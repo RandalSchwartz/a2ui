@@ -9,18 +9,20 @@ A2UI separates UI layout from backend logic through catalogs. This catalog contr
 - The host supplies one hook, `getMcpClientForTool(toolName)`. The catalog uses the client it returns for the tool call, the template read, and tool discovery.
 - Tool results are applied for you. The catalog fetches and caches the presentation template a result points at, then processes any A2UI messages embedded in the result content.
 - Tool arguments accept data bindings, so form state can be passed straight into a tool call.
+- A JSONata expression can turn the tool result into data model updates, which lets a payload drive a server that knows nothing about A2UI.
 - Nothing here is renderer-specific. It works with any A2UI web renderer built on `MessageProcessor`.
 
 ## Catalog specification
 
 The catalog ID is `https://a2ui.org/specification/v0_9/catalogs/mcp/mcp_catalog.json`, exported as `MCP_CATALOG_ID`. It targets protocol v0.9 and v0.9.1.
 
-`callMcpTool` takes two arguments, declared in [mcp_catalog.json](v0_9/mcp_catalog.json):
+`callMcpTool` takes three arguments, declared in [mcp_catalog.json](v0_9/mcp_catalog.json):
 
-| Parameter   | Type     | Required          | Description                   |
-| :---------- | :------- | :---------------- | :---------------------------- |
-| `name`      | `string` | Yes               | The MCP tool to execute.      |
-| `arguments` | `object` | No (default `{}`) | Arguments passed to the tool. |
+| Parameter                | Type     | Required          | Description                                               |
+| :----------------------- | :------- | :---------------- | :-------------------------------------------------------- |
+| `name`                   | `string` | Yes               | The MCP tool to execute.                                  |
+| `arguments`              | `object` | No (default `{}`) | Arguments passed to the tool.                             |
+| `dataModelUpdateJsonata` | `string` | No                | Expression that turns the result into data model updates. |
 
 Tools are addressed by name only. A2UI payloads never name a server, because multi-server routing is a host concern resolved inside `getMcpClientForTool`.
 
@@ -102,6 +104,7 @@ On each invocation the catalog:
 4. Fetches each template through `resources/read`, once per URI, and decodes every content block whose `mimeType` is `application/a2ui+json`. A template carrying several such blocks contributes all of them, and one carrying none contributes nothing.
 5. Processes each template in the order its URI appeared, skipping any that would recreate a live surface.
 6. Processes the A2UI messages inlined in `result.content`, in content order. Only an embedded resource block declaring `application/a2ui+json` counts: a text block is prose for the model, even when it holds a message.
+7. Evaluates `dataModelUpdateJsonata`, when present, and processes the updates it produces. These run last, so a payload can restate anything the server sent.
 
 ### Invoke a tool during bootstrap
 
@@ -139,16 +142,47 @@ Arguments may be data bindings, which resolve against the calling surface:
 }
 ```
 
-An argument key named `path` or `call` stays a literal tool argument. Only a value that is itself a binding gets resolved.
+A whole arguments object may be a binding too, which is how a payload passes an argument whose name would otherwise read as a binding:
+
+```json
+{"arguments": {"path": "/tool_args/get_weather"}}
+```
+
+### Translate a server that knows nothing about A2UI
+
+Most MCP servers answer in their own shape: plain text, or structured content that no A2UI renderer understands. `dataModelUpdateJsonata` lets the payload translate that shape, so the host needs no code for the server it is talking to.
+
+The expression reads the MCP result itself and must produce an object of data model paths to values:
+
+```json
+{
+  "call": "callMcpTool",
+  "args": {
+    "name": "list_directory",
+    "arguments": {"path": {"path": "/current_path"}},
+    "dataModelUpdateJsonata": "{'/entries': $split(content[0].text, '\\n'), '/open_path': $args.path}"
+  }
+}
+```
+
+Two variables carry the surrounding context: `$args` is the arguments the tool ran with, and `$root` is the whole data model.
+
+Each key becomes one `updateDataModel` message against the calling surface, applied after any A2UI the result carried. A key starting with `/` is absolute; any other key resolves against the calling scope, so a list row can write into its own item.
+
+Expressions are compiled once and cached by source text. The expression may itself be a data binding, which is how a payload keeps long expressions in the data model and references them by path:
+
+```json
+{"dataModelUpdateJsonata": {"path": "/jsonata/list"}}
+```
 
 ## Module layout
 
-| File                                   | Responsibility                                                             |
-| :------------------------------------- | :------------------------------------------------------------------------- |
-| `v0_9/src/index.ts`                    | Package entry: `MCP_CATALOG_ID` and public exports                         |
-| `v0_9/src/functions/callMcpTool.ts`    | The whole tool call: request, template fetch and caching, message decoding |
-| `v0_9/src/functions/callMcpToolApi.ts` | The `callMcpTool` argument schema                                          |
-| `v0_9/src/dynamic-values.ts`           | Resolution of dynamic values nested in literal containers                  |
+| File                                   | Responsibility                                                                          |
+| :------------------------------------- | :-------------------------------------------------------------------------------------- |
+| `v0_9/src/index.ts`                    | Package entry: `MCP_CATALOG_ID` and public exports                                      |
+| `v0_9/src/functions/callMcpTool.ts`    | The whole tool call: request, template fetch and caching, message decoding, and JSONata |
+| `v0_9/src/functions/callMcpToolApi.ts` | The `callMcpTool` argument schema                                                       |
+| `v0_9/src/dynamic-values.ts`           | Resolution of dynamic values nested in literal containers                               |
 
 ## Building
 
