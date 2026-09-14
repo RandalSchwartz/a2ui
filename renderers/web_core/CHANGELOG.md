@@ -1,5 +1,7 @@
 ## Unreleased
 
+- **BREAKING CHANGE**: (v0_9) `A2uiLitElement.controller` is a writable property again, reverting the read-only getter introduced in 0.11.0. The getter prevented nothing TypeScript did not already prevent, and it removed the only sanctioned seam for injecting a controller double. Recommended migration: tests that moved to `(el as any)._controller = mock` should assign `controller` directly; the private backing field no longer exists. [#2646](https://github.com/a2ui-project/a2ui/pull/2646)
+
 ## 0.11.0
 
 - **BREAKING CHANGE**: (v0_9) An invalid number literal in an expression, such as `${1.2.3}`, now throws `A2uiExpressionError` instead of being handed back as `NaN`. The accepted shape — digits, an optional decimal point and optional further digits — is stated in the parser rather than inherited from `Number()`, so every implementation accepts the same literals. ([#2497](https://github.com/a2ui-project/a2ui/pull/2497))

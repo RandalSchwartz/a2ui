@@ -56,14 +56,14 @@ export abstract class A2uiLitElement<Api extends ComponentApi = ComponentApi> ex
    */
   protected readonly api?: Api;
 
-  private _controller?: A2uiController<Api>;
-
   /**
    * The reactive controller instance managing property bindings and state subscriptions.
+   *
+   * Bound when `context` is first set. Because `update()` short-circuits while unbound, this is
+   * guaranteed to be present in `render()` and any code it reaches. It is NOT guaranteed inside
+   * `willUpdate()` or `updated()` overrides, both of which run outside that gate.
    */
-  public get controller(): A2uiController<Api> {
-    return this._controller!;
-  }
+  public controller!: A2uiController<Api>;
 
   /**
    * Adopts and scopes component CSS rules into the containing document or host shadow root.
@@ -250,16 +250,16 @@ export abstract class A2uiLitElement<Api extends ComponentApi = ComponentApi> ex
   override willUpdate(changedProperties: PropertyValues) {
     super.willUpdate(changedProperties);
     if (changedProperties.has('context') && this.context) {
-      if (this._controller) {
-        this.removeController(this._controller);
-        this._controller.dispose();
+      if (this.controller) {
+        this.removeController(this.controller);
+        this.controller.dispose();
       }
-      this._controller = this.createController();
+      this.controller = this.createController();
     }
   }
 
   protected override update(changedProperties: PropertyValues) {
-    if (!this._controller) {
+    if (!this.controller) {
       return;
     }
     super.update(changedProperties);

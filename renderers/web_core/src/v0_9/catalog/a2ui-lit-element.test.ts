@@ -21,6 +21,7 @@ import {setupTestDom, teardownTestDom, asyncUpdate} from '../test/dom-setup.js';
 import {ComponentContext} from '../rendering/component-context.js';
 import {MessageProcessor} from '../processing/message-processor.js';
 import {A2uiLitElement} from './a2ui-lit-element.js';
+import type {A2uiController} from './a2ui-controller.js';
 import {basicCatalog} from '../basic_catalog/catalog.js';
 import {TextApi} from '../basic_catalog/components/basic_components.js';
 
@@ -245,6 +246,31 @@ describe('A2uiLitElement', () => {
 
     assert.strictEqual(renderCalled, false);
     assert.strictEqual(el.controller, undefined);
+
+    document.body.removeChild(el);
+  });
+
+  it('should allow a controller to be assigned for testing', async () => {
+    class TestAssignableElement extends A2uiLitElement<typeof TextApi> {
+      protected override readonly api = TextApi;
+      override render() {
+        return this.controller.props.text;
+      }
+    }
+    customElements.define('test-assignable-element', TestAssignableElement);
+
+    const el = document.createElement('test-assignable-element') as TestAssignableElement;
+    el.controller = {
+      props: {text: 'injected'},
+    } as unknown as A2uiController<typeof TextApi>;
+    document.body.appendChild(el);
+
+    await asyncUpdate(el, e => {
+      e.requestUpdate();
+    });
+
+    assert.strictEqual(el.controller.props.text, 'injected');
+    assert.match(el.shadowRoot!.textContent ?? '', /injected/);
 
     document.body.removeChild(el);
   });
