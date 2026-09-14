@@ -256,6 +256,11 @@ class PayloadValidator(Generic[TComponent, TFunction]):
             "$defs": {**defs, **comp_schema.get("$defs", {})},
             **{k: v for k, v in comp_schema.items() if k != "$defs"},
         }
+        if isinstance(base_schema, dict):
+            if "functions" in base_schema and "functions" not in full_schema:
+                full_schema["functions"] = base_schema["functions"]
+            if "components" in base_schema and "components" not in full_schema:
+                full_schema["components"] = base_schema["components"]
         try:
             validator = Draft202012Validator(full_schema)
             props = dict(comp)
@@ -528,6 +533,11 @@ class PayloadValidator(Generic[TComponent, TFunction]):
             }
 
         if param_schema:
+            if isinstance(base_schema, dict):
+                if "functions" in base_schema and "functions" not in param_schema:
+                    param_schema["functions"] = base_schema["functions"]
+                if "components" in base_schema and "components" not in param_schema:
+                    param_schema["components"] = base_schema["components"]
             try:
                 fn_validator = Draft202012Validator(param_schema)
                 schema_errors = sorted(
@@ -590,6 +600,14 @@ class PayloadValidator(Generic[TComponent, TFunction]):
                 "$defs": defs,
                 **theme_schema,
             }
+            if isinstance(base_schema, dict):
+                if "functions" in base_schema and "functions" not in full_theme_schema:
+                    full_theme_schema["functions"] = base_schema["functions"]
+                if (
+                    "components" in base_schema
+                    and "components" not in full_theme_schema
+                ):
+                    full_theme_schema["components"] = base_schema["components"]
             try:
                 theme_validator = Draft202012Validator(full_theme_schema)
                 schema_errors = sorted(

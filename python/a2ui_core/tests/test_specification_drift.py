@@ -42,6 +42,7 @@ from typing import Any, NamedTuple
 import pytest
 
 from a2ui.core.catalog.catalog import Catalog, _get_dynamic_types_defs
+from a2ui.core.validation.payload_validator import PayloadValidator
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 SPEC_ROOT = os.path.join(REPO_ROOT, "specification")
@@ -245,9 +246,9 @@ def _shared_definition_names() -> list[str]:
 
 def test_specification_versions_are_discovered() -> None:
     """Discovery finds the published versions, so the suite cannot silently empty out."""
-    assert _spec_versions(), (
-        f"No specification versions with a common_types.json under {SPEC_ROOT}."
-    )
+    assert (
+        _spec_versions()
+    ), f"No specification versions with a common_types.json under {SPEC_ROOT}."
     assert _catalogs(), f"No published catalogs under {SPEC_ROOT}."
 
 
@@ -313,17 +314,53 @@ def test_published_catalog_resolves_without_specification_files(
         f" tree on disk: {cross_document}"
     )
 
-    referenced = sorted(
-        {
-            ref.split("/")[0]
-            for ref in re.findall(r'"\$ref": "#/\$defs/([^"]+)"', resolved)
-        }
-    )
+    referenced = sorted({
+        ref.split("/")[0]
+        for ref in re.findall(r'"\$ref": "#/\$defs/([^"]+)"', resolved)
+    })
     assert referenced, "Catalog schema references no shared definitions at all."
 
     defs = catalog.catalog_schema.get("$defs", {})
     missing = [name for name in referenced if name not in defs]
     assert not missing, f"Referenced but absent from $defs: {missing}"
+
+
+@pytest.mark.parametrize(
+    ("version", "catalog_path"),
+    _catalogs(),
+    ids=[
+        f"{version}-{os.path.basename(os.path.dirname(path))}"
+        for version, path in _catalogs()
+    ],
+)
+def test_published_catalog_validates_action_payload(
+    version: str, catalog_path: str
+) -> None:
+    """Validating components with actions resolves function and catalog pointers cleanly."""
+    catalog_schema = _load_json(catalog_path)
+    common_types_schema = _load_json(_common_types_path(version))
+
+    catalog = Catalog.from_json(
+        catalog_schema=catalog_schema,
+        protocol_version=_protocol_version(version),
+        catalog_id=catalog_schema["catalogId"],
+        common_types_schema=common_types_schema,
+    )
+    validator = PayloadValidator(catalog)
+    if catalog.get_component("Button") and catalog.get_function("openUrl"):
+        btn_component = {
+            "id": "btn1",
+            "component": "Button",
+            "child": "txt1",
+            "action": {
+                "functionCall": {
+                    "call": "openUrl",
+                    "args": {"url": "https://example.com"},
+                }
+            },
+        }
+        errors = validator.validate_component(btn_component)
+        assert not errors, f"Validation failed on {version} {catalog_path}: {errors}"
 
 
 @pytest.mark.parametrize("version", _versions_with_basic_catalog())
