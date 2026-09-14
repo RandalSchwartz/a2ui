@@ -24,7 +24,7 @@ from a2ui.core.catalog import Catalog
 from a2ui.core.basic_catalog import v0_8, v0_9, v1_0
 from a2ui.core.schema import ProtocolVersion
 from a2ui.core.processing import MessageProcessor, MessageProcessorOptions
-from a2ui.core.validation import STRICT_VALIDATION, ValidationConfig
+from a2ui.core.validation import STRICT_VALIDATION
 from a2ui.core.exceptions import (
     A2uiError,
     A2uiParseError,
