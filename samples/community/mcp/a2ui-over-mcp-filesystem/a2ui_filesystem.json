@@ -84,9 +84,7 @@
               "args": {
                 "name": "list_directory_with_sizes",
                 "arguments": {
-                  "path": {
-                    "path": "/args/open/path"
-                  }
+                  "path": "/args/open"
                 },
                 "dataModelUpdateJsonata": {
                   "path": "/jsonata/list"
@@ -110,9 +108,7 @@
               "args": {
                 "name": "list_directory_with_sizes",
                 "arguments": {
-                  "path": {
-                    "path": "/args/parent/path"
-                  }
+                  "path": "/args/parent"
                 },
                 "dataModelUpdateJsonata": {
                   "path": "/jsonata/list"
@@ -136,7 +132,7 @@
               "args": {
                 "name": "list_directory_with_sizes",
                 "arguments": {
-                  "path": "~"
+                  "path": "/args/home"
                 },
                 "dataModelUpdateJsonata": {
                   "path": "/jsonata/list"
@@ -174,12 +170,7 @@
               "args": {
                 "name": "search_files",
                 "arguments": {
-                  "path": {
-                    "path": "/args/search/path"
-                  },
-                  "pattern": {
-                    "path": "/args/search/pattern"
-                  }
+                  "path": "/args/search"
                 },
                 "dataModelUpdateJsonata": {
                   "path": "/jsonata/search"
@@ -212,9 +203,7 @@
               "args": {
                 "name": "read_text_file",
                 "arguments": {
-                  "path": {
-                    "path": "path"
-                  }
+                  "path": "args"
                 },
                 "dataModelUpdateJsonata": {
                   "path": "jsonata"
@@ -283,9 +272,7 @@
                   "path": "tool"
                 },
                 "arguments": {
-                  "path": {
-                    "path": "path"
-                  }
+                  "path": "args"
                 },
                 "dataModelUpdateJsonata": {
                   "path": "jsonata"

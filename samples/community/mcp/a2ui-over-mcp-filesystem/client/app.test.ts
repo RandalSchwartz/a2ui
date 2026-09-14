@@ -72,7 +72,12 @@ const bootstrap = (app: A2uiFilesystemApp) => (app as any).firstUpdated();
 async function click(app: A2uiFilesystemApp, args: Record<string, unknown>, path = '/') {
   const surface = app.surface!;
   const {DataContext} = await import('@a2ui/web_core/v0_9');
-  await surface.catalog.invoker('callMcpTool', args, new DataContext(surface, path));
+  const context = new DataContext(surface, path);
+  const resolvedArgs: Record<string, any> = {};
+  for (const [k, v] of Object.entries(args)) {
+    resolvedArgs[k] = context.resolveDynamicValue(v as any);
+  }
+  await surface.catalog.invoker('callMcpTool', resolvedArgs, context);
 }
 
 describe('the filesystem payload', () => {
