@@ -126,27 +126,27 @@ describe('the filesystem payload', () => {
         size: '',
         icon: 'folder',
         tool: 'list_directory_with_sizes',
-        args: {path: '~/Documents'},
-        jsonata: app.surface!.dataModel.get('/jsonata/list'),
+        args: {path: 'Documents'},
+        jsonata: {path: '/jsonata/list'},
       },
       {
         name: '.bash_profile',
         size: '568 B',
         icon: 'attachFile',
         tool: 'read_text_file',
-        args: {path: '~/.bash_profile'},
-        jsonata: app.surface!.dataModel.get('/jsonata/read'),
+        args: {path: '.bash_profile'},
+        jsonata: {path: '/jsonata/read'},
       },
       {
         name: 'notes with spaces.md',
         size: '2.39 KB',
         icon: 'attachFile',
         tool: 'read_text_file',
-        args: {path: '~/notes with spaces.md'},
-        jsonata: app.surface!.dataModel.get('/jsonata/read'),
+        args: {path: 'notes with spaces.md'},
+        jsonata: {path: '/jsonata/read'},
       },
     ]);
-    expect(app.surface!.dataModel.get('/entries_title')).toBe('3 entries in ~');
+    expect(app.surface!.dataModel.get('/entries_title')).toBe('3 entries');
   });
 
   it('counts a single entry in the singular', async () => {
@@ -154,7 +154,7 @@ describe('the filesystem payload', () => {
 
     await bootstrap(app);
 
-    expect(app.surface!.dataModel.get('/entries_title')).toBe('1 entry in ~');
+    expect(app.surface!.dataModel.get('/entries_title')).toBe('1 entry');
   });
 
   it('sends a row to the tool the row carries, with the row arguments', async () => {
@@ -165,9 +165,8 @@ describe('the filesystem payload', () => {
 
     expect(mockClient.request.mock.lastCall![0].params).toEqual({
       name: 'read_text_file',
-      arguments: {path: '~/.bash_profile'},
+      arguments: {path: '.bash_profile'},
     });
-    expect(app.surface!.dataModel.get('/viewer_title')).toBe('~/.bash_profile');
     expect(app.surface!.dataModel.get('/viewer_body')).toBe(
       '```\nline one\nline two\nline three\n```',
     );
@@ -178,12 +177,9 @@ describe('the filesystem payload', () => {
 
     await click(app, entryCall(app, 0), '/entries/0');
 
-    // Navigating rewrites the argument objects the nav buttons are bound to.
-    expect(app.surface!.dataModel.get('/args/open')).toEqual({path: '~/Documents'});
-    expect(app.surface!.dataModel.get('/args/parent')).toEqual({path: '~'});
-    expect(app.surface!.dataModel.get('/args/search')).toEqual({
-      path: '~/Documents',
-      pattern: '**/*.md',
+    expect(mockClient.request.mock.lastCall![0].params).toEqual({
+      name: 'list_directory_with_sizes',
+      arguments: {path: 'Documents'},
     });
   });
 
@@ -200,15 +196,15 @@ describe('the filesystem payload', () => {
       {
         label: '/Users/ada/a.md',
         args: {path: '/Users/ada/a.md'},
-        jsonata: app.surface!.dataModel.get('/jsonata/read'),
+        jsonata: {path: '/jsonata/read'},
       },
       {
         label: '/Users/ada/notes/b.md',
         args: {path: '/Users/ada/notes/b.md'},
-        jsonata: app.surface!.dataModel.get('/jsonata/read'),
+        jsonata: {path: '/jsonata/read'},
       },
     ]);
-    expect(app.surface!.dataModel.get('/viewer_body')).toBe('Matches under ~: 2');
+    expect(app.surface!.dataModel.get('/viewer_body')).toBe('Matches: 2');
   });
 
   it('empties the result list when nothing matches', async () => {

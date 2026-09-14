@@ -18,11 +18,11 @@ The catalog ID is `https://a2ui.org/specification/v0_9/catalogs/mcp/mcp_catalog.
 
 `callMcpTool` takes three arguments, declared in [mcp_catalog.json](v0_9/mcp_catalog.json):
 
-| Parameter                | Type     | Required          | Description                                               |
-| :----------------------- | :------- | :---------------- | :-------------------------------------------------------- |
-| `name`                   | `string` | Yes               | The MCP tool to execute.                                  |
-| `arguments`              | `object` | No (default `{}`) | Arguments passed to the tool.                             |
-| `dataModelUpdateJsonata` | `string` | No                | Expression that turns the result into data model updates. |
+| Parameter                | Type            | Required          | Description                                               |
+| :----------------------- | :-------------- | :---------------- | :-------------------------------------------------------- |
+| `name`                   | `DynamicString` | Yes               | The MCP tool to execute.                                  |
+| `arguments`              | `object`        | No (default `{}`) | Arguments passed to the tool.                             |
+| `dataModelUpdateJsonata` | `DynamicString` | No                | Expression that turns the result into data model updates. |
 
 Tools are addressed by name only. A2UI payloads never name a server, because multi-server routing is a host concern resolved inside `getMcpClientForTool`.
 
@@ -160,12 +160,10 @@ The expression reads the MCP result itself and must produce an object of data mo
   "args": {
     "name": "list_directory",
     "arguments": {"path": {"path": "/current_path"}},
-    "dataModelUpdateJsonata": "{'/entries': $split(content[0].text, '\\n'), '/open_path': $args.path}"
+    "dataModelUpdateJsonata": "{'/entries': $split(content[0].text, '\\n')}"
   }
 }
 ```
-
-Two variables carry the surrounding context: `$args` is the arguments the tool ran with, and `$root` is the whole data model.
 
 Each key becomes one `updateDataModel` message against the calling surface, applied after any A2UI the result carried. A key starting with `/` is absolute; any other key resolves against the calling scope, so a list row can write into its own item.
 

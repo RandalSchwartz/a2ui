@@ -682,8 +682,7 @@ describe('callMcpTool', () => {
           name: 'list_directory',
           arguments: {path: '/home/ada'},
           dataModelUpdateJsonata: `{
-            "/entries": $split(content[0].text, "\n").{"label": $},
-            "/current_path": $args.path
+            "/entries": $split(content[0].text, "\n").{"label": $}
           }`,
         },
         new DataContext(surface, '/'),
@@ -693,23 +692,25 @@ describe('callMcpTool', () => {
         {label: '[DIR] client'},
         {label: '[FILE] README.md'},
       ]);
-      assert.strictEqual(surface.dataModel.get('/current_path'), '/home/ada');
     });
 
-    it('reads the data model through $root', async () => {
+    it('resolves chained data bindings in dataModelUpdateJsonata', async () => {
       const client = createFakeClient({result: {content: [{type: 'text', text: 'hello'}]}});
-      const surface = createSurface(client, {label: 'Preview'});
+      const surface = createSurface(client, {
+        expr: '{"/body": content[0].text}',
+        entry: {jsonataRef: {path: '/expr'}},
+      });
 
       await surface.catalog.invoker(
         'callMcpTool',
         {
           name: 'read_text_file',
-          dataModelUpdateJsonata: '{"/heading": $root.label & ": " & content[0].text}',
+          dataModelUpdateJsonata: {path: '/entry/jsonataRef'},
         },
         new DataContext(surface, '/'),
       );
 
-      assert.strictEqual(surface.dataModel.get('/heading'), 'Preview: hello');
+      assert.strictEqual(surface.dataModel.get('/body'), 'hello');
     });
 
     it('resolves a relative update path against the calling scope', async () => {

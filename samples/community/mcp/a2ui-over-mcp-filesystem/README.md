@@ -118,8 +118,6 @@ expression reads:
 
 ```jsonata
 (
-  $dir := $args.path;
-  $up := $substringBefore($dir, '/' & $split($dir, '/')[-1]);
   $rows := [
     $split($join(content[type = 'text'].text, '\n'), '\n')[$contains($, /^\[(DIR|FILE)\]/)].(
       $g := $match($, /^\[(DIR|FILE)\]\s+(.+?)(?:\s\s+([0-9.]+ [A-Za-z]+))?\s*$/).groups;
@@ -129,25 +127,22 @@ expression reads:
         'size': $g[2] ? $g[2] : '',
         'icon': $isDir ? 'folder' : 'attachFile',
         'tool': $isDir ? 'list_directory_with_sizes' : 'read_text_file',
-        'args': { 'path': ($dir = '/' ? '' : $dir) & '/' & $g[1] },
-        'jsonata': $isDir ? $root.jsonata.list : $root.jsonata.read
+        'args': { 'path': $g[1] },
+        'jsonata': $isDir ? { 'path': '/jsonata/list' } : { 'path': '/jsonata/read' }
       }
     )
   ];
   {
-    '/args/open/path': $dir,
-    '/args/parent/path': $up = '' ? '/' : $up,
-    '/args/search/path': $dir,
     '/entries': $rows,
     '/entries_title': $string($count($rows))
-      & ($count($rows) = 1 ? ' entry in ' : ' entries in ') & $dir
+      & ($count($rows) = 1 ? ' entry' : ' entries')
   }
 )
 ```
 
 Each key of the result becomes one `updateDataModel` message against the
-surface. `$args` holds the arguments the call ran with, and `$root` holds the
-data model, which is how each row picks up the expression it will use next.
+surface. Dynamic data binding allows each row to bind to `dataModelUpdateJsonata`
+expressions in the data model.
 Parsing `[DIR] name  size` lines into row objects is the whole adapter, and it
 ships with the UI rather than with the client.
 

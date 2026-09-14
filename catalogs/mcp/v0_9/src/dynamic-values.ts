@@ -91,11 +91,17 @@ export function resolveDynamicValueDeep<T = unknown>(value: unknown, context: Da
     return value.map(item => resolveDynamicValueDeep(item, context)) as unknown as T;
   }
   if (isDataBinding(value)) {
-    return context.resolveDynamicValue(value);
+    const resolved = context.resolveDynamicValue(value);
+    return isDynamicExpression(resolved)
+      ? resolveDynamicValueDeep(resolved, context)
+      : (resolved as T);
   }
   if (isFunctionCall(value)) {
     // `args` is optional in the spec but required by the resolver.
-    return context.resolveDynamicValue({...value, args: value.args ?? {}});
+    const resolved = context.resolveDynamicValue({...value, args: value.args ?? {}});
+    return isDynamicExpression(resolved)
+      ? resolveDynamicValueDeep(resolved, context)
+      : (resolved as T);
   }
   return resolveDynamicRecord(value, context) as T;
 }

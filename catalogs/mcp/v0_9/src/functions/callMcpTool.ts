@@ -130,8 +130,7 @@
  *
  * `dataModelUpdateJsonata` reads the MCP result and produces an object of data
  * model paths, each applied to the calling surface as an `updateDataModel`
- * message once the call completes. `$args` and `$root` carry the arguments the
- * tool ran with and the whole data model.
+ * message once the call completes.
  *
  * ## Failures
  *
@@ -154,7 +153,7 @@ import type {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {CallToolResultSchema} from '@modelcontextprotocol/sdk/types.js';
 import type {CallToolResult, ReadResourceResult} from '@modelcontextprotocol/sdk/types.js';
 import jsonata, {type Expression} from 'jsonata';
-import {resolveDynamicRecord} from '../dynamic-values.js';
+import {resolveDynamicRecord, resolveDynamicValueDeep} from '../dynamic-values.js';
 import {CallMcpToolApi} from './callMcpToolApi.js';
 
 export {CallMcpToolApi};
@@ -233,7 +232,7 @@ export function createCallMcpToolImplementation(
     const updateJsonata =
       args.dataModelUpdateJsonata === undefined
         ? undefined
-        : context.resolveDynamicValue<string>(args.dataModelUpdateJsonata as never);
+        : resolveDynamicValueDeep<string>(args.dataModelUpdateJsonata, context);
 
     try {
       const resolvedArguments = resolveDynamicRecord(args.arguments ?? {}, context);
@@ -274,13 +273,7 @@ export function createCallMcpToolImplementation(
 
       // Updates the payload derived from the result itself, applied last so a
       // payload can restate anything the server sent inline.
-      const updates = await buildJsonataUpdates(
-        updateJsonata,
-        toolName,
-        resolvedArguments,
-        result,
-        context,
-      );
+      const updates = await buildJsonataUpdates(updateJsonata, result, context);
       if (updates.length > 0) {
         processor.processMessages(updates);
       }
@@ -313,8 +306,7 @@ const compiledExpressions = new Map<string, Expression>();
  * messages it describes.
  *
  * The expression reads the MCP result itself, so `content[0].text` is the
- * common first step. Two variables carry the surrounding context: `$args` is
- * the arguments the tool ran with, and `$root` is the whole data model.
+ * common first step.
  *
  * The result must be an object whose keys are data model paths. Each key
  * becomes its own message, so one tool call can fill several parts of the
@@ -324,8 +316,6 @@ const compiledExpressions = new Map<string, Expression>();
  */
 async function buildJsonataUpdates(
   expression: string | undefined,
-  toolName: string,
-  toolArguments: Record<string, unknown>,
   result: CallToolResult,
   context: DataContext,
 ): Promise<A2uiMessage[]> {
@@ -338,29 +328,27 @@ async function buildJsonataUpdates(
     try {
       compiled = jsonata(expression);
     } catch (error: unknown) {
-      throw expressionError('Invalid JSONata', toolName, error);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Invalid JSONata: ${message}`);
     }
     compiledExpressions.set(expression, compiled);
   }
 
   let evaluated: unknown;
   try {
-    evaluated = await compiled.evaluate(result, {
-      args: toolArguments,
-      root: context.dataModel.get('/'),
-    });
+    evaluated = await compiled.evaluate(result);
   } catch (error: unknown) {
-    throw expressionError('JSONata evaluation failed', toolName, error);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`JSONata evaluation failed: ${message}`);
   }
 
   if (evaluated === undefined || evaluated === null) {
     return [];
   }
   if (typeof evaluated !== 'object' || Array.isArray(evaluated)) {
-    throw new A2uiExpressionError(
-      `dataModelUpdateJsonata for MCP tool '${toolName}' must produce an object of ` +
+    throw new Error(
+      `dataModelUpdateJsonata must produce an object of ` +
         `data model paths, got ${Array.isArray(evaluated) ? 'an array' : `a ${typeof evaluated}`}.`,
-      'callMcpTool',
     );
   }
 
@@ -368,7 +356,7 @@ async function buildJsonataUpdates(
     version: 'v0.9',
     updateDataModel: {
       surfaceId: context.surface.id,
-      path: resolveDataPath(path, context.path),
+      path: context.nested(path).path,
       // JSONata answers with sequences, which are arrays carrying an extra
       // `sequence` property, and with objects built on a null prototype.
       // Neither belongs in a data model a renderer reads, and a structural
@@ -376,27 +364,6 @@ async function buildJsonataUpdates(
       value: value === undefined ? value : JSON.parse(JSON.stringify(value)),
     },
   })) as A2uiMessage[];
-}
-
-/** Resolves a data model path against the path of the calling data context. */
-function resolveDataPath(path: string, basePath: string): string {
-  if (path.startsWith('/')) {
-    return path;
-  }
-  if (path === '' || path === '.') {
-    return basePath;
-  }
-  return `${basePath === '/' ? '' : basePath.replace(/\/$/, '')}/${path}`;
-}
-
-/** Names a JSONata failure after the tool the expression belongs to. */
-function expressionError(what: string, toolName: string, error: unknown): A2uiExpressionError {
-  const message = error instanceof Error ? error.message : String(error);
-  return new A2uiExpressionError(
-    `${what} for MCP tool '${toolName}': ${message}`,
-    'callMcpTool',
-    error,
-  );
 }
 
 /**

@@ -144,6 +144,15 @@ describe('dynamic-values', () => {
       // `args` is optional in the spec; resolution must not throw without it.
       assert.strictEqual(resolveDynamicValueDeep({call: 'shout'}, context), undefined);
     });
+
+    it('resolves chained data bindings', () => {
+      const context = createContext({
+        target: 'final_value',
+        alias: {path: '/target'},
+      });
+
+      assert.strictEqual(resolveDynamicValueDeep({path: '/alias'}, context), 'final_value');
+    });
   });
 
   describe('resolveDynamicRecord', () => {

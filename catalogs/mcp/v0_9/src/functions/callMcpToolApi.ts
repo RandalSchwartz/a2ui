@@ -42,8 +42,7 @@ export const CallMcpToolApi = {
     dataModelUpdateJsonata: DynamicStringSchema.optional().describe(
       'A JSONata expression evaluated against the MCP tool result that produces ' +
         'an object of data model paths to values. Each entry is applied to the ' +
-        'calling surface as an updateDataModel message once the call completes. ' +
-        'The variables `$args` and `$root` hold the tool arguments and the data model.',
+        'calling surface as an updateDataModel message once the call completes.',
     ),
   }),
   description: 'Invokes a tool on a connected Model Context Protocol (MCP) server.',
