@@ -117,7 +117,7 @@ describe('the filesystem payload', () => {
     ]);
   });
 
-  it('turns a directory listing into rows the row template binds to', async () => {
+  it('turns a directory listing into rows the row template binds to, hiding dotfiles', async () => {
     await bootstrap(app);
 
     expect(app.surface!.dataModel.get('/entries')).toEqual([
@@ -131,15 +131,6 @@ describe('the filesystem payload', () => {
         jsonata: {path: '/jsonata/list'},
       },
       {
-        name: '.bash_profile',
-        path: '~/.bash_profile',
-        size: '568 B',
-        icon: 'attachFile',
-        tool: 'read_text_file',
-        args: {path: '~/.bash_profile'},
-        jsonata: {path: '/jsonata/read'},
-      },
-      {
         name: 'notes with spaces.md',
         path: '~/notes with spaces.md',
         size: '2.39 KB',
@@ -149,7 +140,7 @@ describe('the filesystem payload', () => {
         jsonata: {path: '/jsonata/read'},
       },
     ]);
-    expect(app.surface!.dataModel.get('/entries_title')).toBe('3 entries');
+    expect(app.surface!.dataModel.get('/entries_title')).toBe('2 entries');
   });
 
   it('counts a single entry in the singular', async () => {
@@ -168,12 +159,12 @@ describe('the filesystem payload', () => {
 
     expect(mockClient.request.mock.lastCall![0].params).toEqual({
       name: 'read_text_file',
-      arguments: {path: '~/.bash_profile'},
+      arguments: {path: '~/notes with spaces.md'},
     });
     expect(app.surface!.dataModel.get('/viewer_body')).toBe(
       '```\nline one\nline two\nline three\n```',
     );
-    expect(app.surface!.dataModel.get('/args/open/path')).toBe('~/.bash_profile');
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('~/notes with spaces.md');
   });
 
   it('keeps the listing branch for a row that is a directory and supports nested navigation', async () => {
