@@ -123,29 +123,29 @@ describe('the filesystem payload', () => {
     expect(app.surface!.dataModel.get('/entries')).toEqual([
       {
         name: 'Documents',
-        path: 'Documents',
+        path: '~/Documents',
         size: '',
         icon: 'folder',
         tool: 'list_directory_with_sizes',
-        args: {path: 'Documents'},
+        args: {path: '~/Documents'},
         jsonata: {path: '/jsonata/list'},
       },
       {
         name: '.bash_profile',
-        path: '.bash_profile',
+        path: '~/.bash_profile',
         size: '568 B',
         icon: 'attachFile',
         tool: 'read_text_file',
-        args: {path: '.bash_profile'},
+        args: {path: '~/.bash_profile'},
         jsonata: {path: '/jsonata/read'},
       },
       {
         name: 'notes with spaces.md',
-        path: 'notes with spaces.md',
+        path: '~/notes with spaces.md',
         size: '2.39 KB',
         icon: 'attachFile',
         tool: 'read_text_file',
-        args: {path: 'notes with spaces.md'},
+        args: {path: '~/notes with spaces.md'},
         jsonata: {path: '/jsonata/read'},
       },
     ]);
@@ -168,12 +168,12 @@ describe('the filesystem payload', () => {
 
     expect(mockClient.request.mock.lastCall![0].params).toEqual({
       name: 'read_text_file',
-      arguments: {path: '.bash_profile'},
+      arguments: {path: '~/.bash_profile'},
     });
     expect(app.surface!.dataModel.get('/viewer_body')).toBe(
       '```\nline one\nline two\nline three\n```',
     );
-    expect(app.surface!.dataModel.get('/args/open/path')).toBe('.bash_profile');
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('~/.bash_profile');
   });
 
   it('keeps the listing branch for a row that is a directory and supports nested navigation', async () => {
@@ -183,9 +183,9 @@ describe('the filesystem payload', () => {
 
     expect(mockClient.request.mock.lastCall![0].params).toEqual({
       name: 'list_directory_with_sizes',
-      arguments: {path: 'Documents'},
+      arguments: {path: '~/Documents'},
     });
-    expect(app.surface!.dataModel.get('/args/open/path')).toBe('Documents');
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('~/Documents');
     expect(app.surface!.dataModel.get('/args/parent/path')).toBe('~');
 
     // Navigate a second level down
@@ -193,10 +193,10 @@ describe('the filesystem payload', () => {
 
     expect(mockClient.request.mock.lastCall![0].params).toEqual({
       name: 'list_directory_with_sizes',
-      arguments: {path: 'Documents/Documents'},
+      arguments: {path: '~/Documents/Documents'},
     });
-    expect(app.surface!.dataModel.get('/args/open/path')).toBe('Documents/Documents');
-    expect(app.surface!.dataModel.get('/args/parent/path')).toBe('Documents');
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('~/Documents/Documents');
+    expect(app.surface!.dataModel.get('/args/parent/path')).toBe('~/Documents');
   });
 
   it('turns search output into a result list in the directory entries pane', async () => {
@@ -238,22 +238,22 @@ describe('the filesystem payload', () => {
     await bootstrap(app);
 
     // User types in the Directory text field
-    app.surface!.dataModel.set('/args/open/path', 'Documents/projects');
+    app.surface!.dataModel.set('/args/open/path', '~/Documents/projects');
 
     // Click "List directory" button
     await click(app, {
       name: 'list_directory_with_sizes',
-      arguments: {path: 'Documents/projects'},
+      arguments: {path: '~/Documents/projects'},
       dataModelUpdateJsonata: {path: '/jsonata/list'},
     });
 
     expect(mockClient.request.mock.lastCall![0].params).toEqual({
       name: 'list_directory_with_sizes',
-      arguments: {path: 'Documents/projects'},
+      arguments: {path: '~/Documents/projects'},
     });
-    expect(app.surface!.dataModel.get('/args/open/path')).toBe('Documents/projects');
-    expect(app.surface!.dataModel.get('/args/parent/path')).toBe('Documents');
-    expect(app.surface!.dataModel.get('/args/search/path')).toBe('Documents/projects');
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('~/Documents/projects');
+    expect(app.surface!.dataModel.get('/args/parent/path')).toBe('~/Documents');
+    expect(app.surface!.dataModel.get('/args/search/path')).toBe('~/Documents/projects');
   });
 
   it('empties the result list when nothing matches', async () => {
