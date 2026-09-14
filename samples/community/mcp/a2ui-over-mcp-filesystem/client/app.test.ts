@@ -199,7 +199,7 @@ describe('the filesystem payload', () => {
     expect(app.surface!.dataModel.get('/args/parent/path')).toBe('Documents');
   });
 
-  it('turns search output into a result list', async () => {
+  it('turns search output into a result list in the directory entries pane', async () => {
     await bootstrap(app);
 
     await click(app, searchCall(app));
@@ -208,22 +208,29 @@ describe('the filesystem payload', () => {
       path: '~',
       pattern: '**/*.md',
     });
-    expect(app.surface!.dataModel.get('/search_results')).toEqual([
+    expect(app.surface!.dataModel.get('/entries')).toEqual([
       {
-        label: '/Users/ada/a.md',
+        name: '/Users/ada/a.md',
         path: '/Users/ada/a.md',
+        size: '',
+        icon: 'attachFile',
+        tool: 'read_text_file',
         args: {path: '/Users/ada/a.md'},
         jsonata: {path: '/jsonata/read'},
       },
       {
-        label: '/Users/ada/notes/b.md',
+        name: '/Users/ada/notes/b.md',
         path: '/Users/ada/notes/b.md',
+        size: '',
+        icon: 'attachFile',
+        tool: 'read_text_file',
         args: {path: '/Users/ada/notes/b.md'},
         jsonata: {path: '/jsonata/read'},
       },
     ]);
+    expect(app.surface!.dataModel.get('/entries_title')).toBe('Search: 2 matches in `~`');
     expect(app.surface!.dataModel.get('/viewer_body')).toBe(
-      'Found 2 matches for glob `**/*.md` in `~`',
+      'Found 2 matches for glob `**/*.md` in `~`. Select a file on the left to read it.',
     );
   });
 
@@ -236,7 +243,7 @@ describe('the filesystem payload', () => {
     // Click "List directory" button
     await click(app, {
       name: 'list_directory_with_sizes',
-      arguments: {path: {path: '/args/open/path'}},
+      arguments: {path: 'Documents/projects'},
       dataModelUpdateJsonata: {path: '/jsonata/list'},
     });
 
@@ -255,7 +262,10 @@ describe('the filesystem payload', () => {
 
     await click(app, searchCall(app));
 
-    expect(app.surface!.dataModel.get('/search_results')).toEqual([]);
+    expect(app.surface!.dataModel.get('/entries')).toEqual([]);
+    expect(app.surface!.dataModel.get('/viewer_body')).toBe(
+      'No matches found for glob `**/*.md` in `~`.',
+    );
   });
 
   it('reports a transport failure instead of rendering an empty surface', async () => {

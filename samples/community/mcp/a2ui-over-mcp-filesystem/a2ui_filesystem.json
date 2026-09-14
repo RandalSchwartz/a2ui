@@ -42,12 +42,7 @@
         {
           "id": "top_card",
           "component": "Card",
-          "child": "top_controls"
-        },
-        {
-          "id": "top_controls",
-          "component": "Column",
-          "children": ["controls_row", "search_results_list"]
+          "child": "controls_row"
         },
         {
           "id": "controls_row",
@@ -150,12 +145,12 @@
           "id": "search_column",
           "component": "Column",
           "weight": 1,
-          "children": ["search_field", "search_button", "search_results_list"]
+          "children": ["search_field", "search_button"]
         },
         {
           "id": "search_field",
           "component": "TextField",
-          "label": "Search files (glob)",
+          "label": "Search in directory (glob)",
           "value": {
             "path": "/args/search/pattern"
           }
@@ -182,43 +177,7 @@
         {
           "id": "search_button_text",
           "component": "Text",
-          "text": "Run search_files"
-        },
-        {
-          "id": "search_results_list",
-          "component": "List",
-          "children": {
-            "componentId": "search_row",
-            "path": "/search_results"
-          }
-        },
-        {
-          "id": "search_row",
-          "component": "Button",
-          "variant": "borderless",
-          "child": "search_row_text",
-          "action": {
-            "functionCall": {
-              "call": "callMcpTool",
-              "args": {
-                "name": "read_text_file",
-                "arguments": {
-                  "path": "args"
-                },
-                "dataModelUpdateJsonata": {
-                  "path": "jsonata"
-                }
-              }
-            }
-          }
-        },
-        {
-          "id": "search_row_text",
-          "component": "Text",
-          "text": {
-            "path": "label"
-          },
-          "variant": "caption"
+          "text": "Search in directory"
         },
         {
           "id": "entries_card",
@@ -356,9 +315,9 @@
           }
         },
         "jsonata": {
-          "list": "( $dir := $args.path ? $args.path : '~'; $isRoot := ($dir = '~' or $dir = '' or $dir = '.'); $childPath := function($name) { $isRoot ? $name : ($dir & '/' & $name) }; $parentDir := ($isRoot or $not($contains($dir, '/'))) ? '~' : $replace($dir, /\\/[^/]+$/, ''); $rows := [ $split($join(content[type = 'text'].text, '\\n'), '\\n')[$contains($, /^\\[(DIR|FILE)\\]/)].( $g := $match($, /^\\[(DIR|FILE)\\]\\s+(.+?)(?:\\s\\s+([0-9.]+ [A-Za-z]+))?\\s*$/).groups; $isDir := $g[0] = 'DIR'; $p := $childPath($g[1]); { 'name': $g[1], 'path': $p, 'size': $g[2] ? $g[2] : '', 'icon': $isDir ? 'folder' : 'attachFile', 'tool': $isDir ? 'list_directory_with_sizes' : 'read_text_file', 'args': { 'path': $p }, 'jsonata': $isDir ? { 'path': '/jsonata/list' } : { 'path': '/jsonata/read' } } ) ]; { '/entries': $rows, '/entries_title': $string($count($rows)) & ($count($rows) = 1 ? ' entry' : ' entries'), '/args/open/path': $dir, '/args/parent/path': $parentDir, '/args/search/path': $dir, '/viewer_title': $isRoot ? 'Home Directory (~)' : $dir, '/viewer_body': 'Choose a file on the left to read it.', '/search_results': [] } )",
+          "list": "( $dir := $args.path ? $args.path : '~'; $isRoot := ($dir = '~' or $dir = '' or $dir = '.'); $childPath := function($name) { $isRoot ? $name : ($dir & '/' & $name) }; $parentDir := ($isRoot or $not($contains($dir, '/'))) ? '~' : $replace($dir, /\\/[^/]+$/, ''); $rows := [ $split($join(content[type = 'text'].text, '\\n'), '\\n')[$contains($, /^\\[(DIR|FILE)\\]/)].( $g := $match($, /^\\[(DIR|FILE)\\]\\s+(.+?)(?:\\s\\s+([0-9.]+ [A-Za-z]+))?\\s*$/).groups; $isDir := $g[0] = 'DIR'; $p := $childPath($g[1]); { 'name': $g[1], 'path': $p, 'size': $g[2] ? $g[2] : '', 'icon': $isDir ? 'folder' : 'attachFile', 'tool': $isDir ? 'list_directory_with_sizes' : 'read_text_file', 'args': { 'path': $p }, 'jsonata': $isDir ? { 'path': '/jsonata/list' } : { 'path': '/jsonata/read' } } ) ]; { '/entries': $rows, '/entries_title': $string($count($rows)) & ($count($rows) = 1 ? ' entry' : ' entries'), '/args/open/path': $dir, '/args/parent/path': $parentDir, '/args/search/path': $dir, '/viewer_title': $isRoot ? 'Home Directory (~)' : $dir, '/viewer_body': 'Choose a file on the left to read it.' } )",
           "read": "{ '/viewer_body': '```\\n' & $join($split($join(content[type = 'text'].text, '\\n'), '\\n')[[0..200]], '\\n') & '\\n```', '/viewer_title': $args.path ? $args.path : 'File Content', '/args/open/path': $args.path ? $args.path : '' }",
-          "search": "( $hits := [ $split($join(content[type = 'text'].text, '\\n'), '\\n')[$ != '' and $not($contains($, 'No matches'))].{ 'label': $, 'path': $, 'args': { 'path': $ }, 'jsonata': { 'path': '/jsonata/read' } } ]; { '/search_results': $hits, '/viewer_body': 'Found ' & $string($count($hits)) & ($count($hits) = 1 ? ' match' : ' matches') & ' for glob `' & ($args.pattern ? $args.pattern : '**/*.md') & '` in `' & ($args.path ? $args.path : '~') & '`', '/viewer_title': 'Search Results' } )"
+          "search": "( $hits := [ $split($join(content[type = 'text'].text, '\\n'), '\\n')[$ != '' and $not($contains($, 'No matches'))].( { 'name': $, 'path': $, 'size': '', 'icon': 'attachFile', 'tool': 'read_text_file', 'args': { 'path': $ }, 'jsonata': { 'path': '/jsonata/read' } } ) ]; { '/entries': $hits, '/entries_title': 'Search: ' & $string($count($hits)) & ($count($hits) = 1 ? ' match' : ' matches') & ' in `' & ($args.path ? $args.path : '~') & '`', '/viewer_title': 'Search in ' & ($args.path ? $args.path : '~'), '/viewer_body': $count($hits) > 0 ? ('Found ' & $string($count($hits)) & ($count($hits) = 1 ? ' match' : ' matches') & ' for glob `' & ($args.pattern ? $args.pattern : '**/*.md') & '` in `' & ($args.path ? $args.path : '~') & '`. Select a file on the left to read it.') : ('No matches found for glob `' & ($args.pattern ? $args.pattern : '**/*.md') & '` in `' & ($args.path ? $args.path : '~') & '`.') } )"
         },
         "startup": [
           {
