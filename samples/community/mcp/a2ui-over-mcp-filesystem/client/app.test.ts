@@ -72,12 +72,7 @@ const bootstrap = (app: A2uiFilesystemApp) => (app as any).firstUpdated();
 async function click(app: A2uiFilesystemApp, args: Record<string, unknown>, path = '/') {
   const surface = app.surface!;
   const {DataContext} = await import('@a2ui/web_core/v0_9');
-  const context = new DataContext(surface, path);
-  const resolvedArgs: Record<string, any> = {};
-  for (const [k, v] of Object.entries(args)) {
-    resolvedArgs[k] = context.resolveDynamicValue(v as any);
-  }
-  await surface.catalog.invoker('callMcpTool', resolvedArgs, context);
+  await surface.catalog.invoker('callMcpTool', args, new DataContext(surface, path));
 }
 
 describe('the filesystem payload', () => {
@@ -178,6 +173,7 @@ describe('the filesystem payload', () => {
     expect(app.surface!.dataModel.get('/viewer_body')).toBe(
       '```\nline one\nline two\nline three\n```',
     );
+    expect(app.surface!.dataModel.get('/args/open/path')).toBe('.bash_profile');
   });
 
   it('keeps the listing branch for a row that is a directory and supports nested navigation', async () => {
