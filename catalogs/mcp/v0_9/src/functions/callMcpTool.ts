@@ -231,13 +231,13 @@ export function createCallMcpToolImplementation(
         // Creating a surface twice throws A2uiStateError. On a repeat call,
         // keep the existing surface and apply only the inline messages below.
         if (!createsExistingSurface(resourceMessages, processor)) {
-          processor.processMessages(resourceMessages);
+          processor.processMessages(resourceMessages.map(ensureMessageVersion));
         }
       }
 
       const messages = extractA2uiMessages(result.content);
       if (messages.length > 0) {
-        processor.processMessages(messages);
+        processor.processMessages(messages.map(ensureMessageVersion));
       }
 
       return result;
@@ -350,4 +350,15 @@ function createsExistingSurface(
     const surfaceId = (message as CreateSurfaceMessage).createSurface?.surfaceId;
     return !!surfaceId && !!processor.model.getSurface(surfaceId);
   });
+}
+
+/**
+ * Ensures an A2UI message carries a version identifier before processing,
+ * defaulting to 'v0.9' for MCP v0.9 catalog payloads when not explicitly provided.
+ */
+function ensureMessageVersion(message: A2uiMessage): A2uiMessage {
+  if (typeof message === 'object' && message !== null && !('version' in message)) {
+    return {version: 'v0.9', ...(message as Record<string, unknown>)} as A2uiMessage;
+  }
+  return message;
 }
